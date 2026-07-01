@@ -96,6 +96,10 @@ class UrbanRoutesPage:
     def wait_for_blanket_button(self):
         return WebDriverWait(self.driver, 10).until(expected_conditions.element_to_be_clickable(self.switch_for_blanket))
 
+# Esperar el boton + del helado
+    def wait_plus_button_icecream(self):
+        return WebDriverWait(self.driver, 10).until(expected_conditions.visibility_of_element_located(self.add_icecream))
+
 # Definir el método para rellenar la información del formulario Desde
 
     def set_from(self, from_address):
@@ -115,6 +119,27 @@ class UrbanRoutesPage:
 
     def get_to(self):
         return self.driver.find_element(*self.to_field).get_property('value')
+
+# Obtener valor del campo comfort
+
+    def get_comfort_price(self):
+        return self.driver.find_element(*self.comfort_price).text
+
+# Obtener phone number
+
+    def get_phone_number(self):
+        return self.driver.find_element(By.CLASS_NAME, "np-text").text
+
+# Obtener card number
+
+    def get_card_number(self):
+        return self.driver.find_element(*self.card_number_field).get_attribute('value')
+
+# Obtener el mensaje al conductor
+
+    def get_message_for_driver(self):
+        return self.driver.find_element(*self.driver_message).get_attribute('value')
+
 
 # Método que rellena los campos desde y hasta, espera que aparezca el botón y hace clic en él
 
@@ -151,6 +176,8 @@ class UrbanRoutesPage:
         UrbanRoutesPage.wait_for_card_number_field(self)
         self.driver.find_element(*self.card_number_field).send_keys(data.card_number)
         self.driver.find_element(*self.code_field).send_keys(data.card_code)
+
+    def set_save_card_details(self):
         self.driver.find_element(*self.another_click).click()
         self.driver.find_element(*self.add_button).click()
         close_button = UrbanRoutesPage.wait_close_payment_method_overlay_button(self)
@@ -182,7 +209,7 @@ class UrbanRoutesPage:
 # Clase para el modal del conductor
 
 class OrderOverlay:
-    order_overlay_timer = (By.XPATH, '//div[@class="order-header-time"]')
+    order_overlay_timer = (By.XPATH, '//div[contains(@class, "order-header-time")]')
     taxi_driver_name  = (By.XPATH, '//div[@class="order-number"]')
 
     def __init__(self, driver):
@@ -191,13 +218,17 @@ class OrderOverlay:
 # Espera para la aparición del Modal
 
     def wait_for_order_overlay(self):
-        WebDriverWait(self.driver, 200).until(expected_conditions.invisibility_of_element_located(self.order_overlay_timer))
+        WebDriverWait(self.driver, 200).until(expected_conditions.visibility_of_element_located(self.order_overlay_timer))
 
 # Espera hasta que la información del conductor aparezca
 
     def wait_driver_name(self):
         WebDriverWait(self.driver, 200).until(expected_conditions.visibility_of_element_located(self.taxi_driver_name))
 
+# Obtener nombre del conductor
+
+    def get_taxi_driver_name(self):
+        return self.driver.find_element(*self.taxi_driver_name).text
 
 class TestUrbanRoutes:
 
@@ -225,19 +256,146 @@ class TestUrbanRoutes:
         routes_page.set_route(address_from, address_to)
         assert routes_page.get_from() == address_from
         assert routes_page.get_to() == address_to
+
+    def test_set_comfort_price(self):
+        self.driver.get(data.urban_routes_url)
+        routes_page = UrbanRoutesPage(self.driver)
+        routes_page.wait_for_load_home_page()
+        address_from = data.address_from
+        address_to = data.address_to
+        routes_page.set_route(address_from, address_to)
+        routes_page.set_comfort_price()
+        assert routes_page.get_comfort_price() == "Comfort"
+
+    def test_set_phone_number(self):
+        self.driver.get(data.urban_routes_url)
+        routes_page = UrbanRoutesPage(self.driver)
+        routes_page.wait_for_load_home_page()
+        address_from = data.address_from
+        address_to = data.address_to
+        routes_page.set_route(address_from, address_to)
+        routes_page.set_comfort_price()
+        routes_page.set_phone_number()
+        phone_code = retrieve_phone_code(self.driver)
+        routes_page.set_phone_code(phone_code)
+        assert routes_page.get_phone_number() == data.phone_number
+
+    def test_set_card_number(self):
+        self.driver.get(data.urban_routes_url)
+        routes_page = UrbanRoutesPage(self.driver)
+        routes_page.wait_for_load_home_page()
+        address_from = data.address_from
+        address_to = data.address_to
+        routes_page.set_route(address_from, address_to)
         routes_page.set_comfort_price()
         routes_page.set_phone_number()
         phone_code = retrieve_phone_code(self.driver)
         routes_page.set_phone_code(phone_code)
         routes_page.wait_for_select_payment_method()
         routes_page.set_card_number()
+        assert routes_page.get_card_number() == data.card_number
+
+    def test_set_driver_message(self):
+        self.driver.get(data.urban_routes_url)
+        routes_page = UrbanRoutesPage(self.driver)
+        routes_page.wait_for_load_home_page()
+        address_from = data.address_from
+        address_to = data.address_to
+        routes_page.set_route(address_from, address_to)
+        routes_page.set_comfort_price()
+        routes_page.set_phone_number()
+        phone_code = retrieve_phone_code(self.driver)
+        routes_page.set_phone_code(phone_code)
+        routes_page.wait_for_select_payment_method()
+        routes_page.set_card_number()
+        routes_page.set_save_card_details()
+        routes_page.set_driver_message()
+        assert routes_page.get_message_for_driver() == data.message_for_driver
+
+    def test_set_blanket(self):
+        self.driver.get(data.urban_routes_url)
+        routes_page = UrbanRoutesPage(self.driver)
+        routes_page.wait_for_load_home_page()
+        address_from = data.address_from
+        address_to = data.address_to
+        routes_page.set_route(address_from, address_to)
+        routes_page.set_comfort_price()
+        routes_page.set_phone_number()
+        phone_code = retrieve_phone_code(self.driver)
+        routes_page.set_phone_code(phone_code)
+        routes_page.wait_for_select_payment_method()
+        routes_page.set_card_number()
+        routes_page.set_save_card_details()
         routes_page.set_driver_message()
         routes_page.set_blanket()
+        switch = self.driver.find_element(By.CSS_SELECTOR, ".switch-input")
+        assert switch.is_selected(), "El switch no quedó activo"
+
+    def test_set_icecream(self):
+        self.driver.get(data.urban_routes_url)
+        routes_page = UrbanRoutesPage(self.driver)
+        routes_page.wait_for_load_home_page()
+        address_from = data.address_from
+        address_to = data.address_to
+        routes_page.set_route(address_from, address_to)
+        routes_page.set_comfort_price()
+        routes_page.set_phone_number()
+        phone_code = retrieve_phone_code(self.driver)
+        routes_page.set_phone_code(phone_code)
+        routes_page.wait_for_select_payment_method()
+        routes_page.set_card_number()
+        routes_page.set_save_card_details()
+        routes_page.set_driver_message()
+        routes_page.set_blanket()
+        routes_page.wait_plus_button_icecream()
         routes_page.set_icecream()
+        icecream_count = self.driver.find_element(By.XPATH, '//div[contains(@class, "r-counter-label") and normalize-space()="Helado"]/../div[@class="r-counter"]/div[@class="counter"]/div[@class="counter-value"]').text
+        assert icecream_count == "2"
+
+    def test_set_search_taxi(self):
+        self.driver.get(data.urban_routes_url)
+        routes_page = UrbanRoutesPage(self.driver)
+        routes_page.wait_for_load_home_page()
+        address_from = data.address_from
+        address_to = data.address_to
+        routes_page.set_route(address_from, address_to)
+        routes_page.set_comfort_price()
+        routes_page.set_phone_number()
+        phone_code = retrieve_phone_code(self.driver)
+        routes_page.set_phone_code(phone_code)
+        routes_page.wait_for_select_payment_method()
+        routes_page.set_card_number()
+        routes_page.set_save_card_details()
+        routes_page.set_driver_message()
+        routes_page.set_blanket()
+        routes_page.set_search_taxi()
+        modal_page = OrderOverlay(self.driver)
+        modal_page.wait_for_order_overlay()
+        taxi_overlay = self.driver.find_element(*OrderOverlay.order_overlay_timer)
+        assert taxi_overlay.is_displayed(), "El overlay no esta activo"
+
+    def test_driver_name(self):
+        self.driver.get(data.urban_routes_url)
+        routes_page = UrbanRoutesPage(self.driver)
+        routes_page.wait_for_load_home_page()
+        address_from = data.address_from
+        address_to = data.address_to
+        routes_page.set_route(address_from, address_to)
+        routes_page.set_comfort_price()
+        routes_page.set_phone_number()
+        phone_code = retrieve_phone_code(self.driver)
+        routes_page.set_phone_code(phone_code)
+        routes_page.wait_for_select_payment_method()
+        routes_page.set_card_number()
+        routes_page.set_save_card_details()
+        routes_page.set_driver_message()
+        routes_page.set_blanket()
         routes_page.set_search_taxi()
         modal_page = OrderOverlay(self.driver)
         modal_page.wait_for_order_overlay()
         modal_page.wait_driver_name()
+        name_of_taxi_driver = self.driver.find_element(*OrderOverlay.taxi_driver_name).text
+        assert modal_page.get_taxi_driver_name() == name_of_taxi_driver
 
 
     @classmethod
